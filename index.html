@@ -1,0 +1,127 @@
+﻿<!doctype html>
+<html ng-app="app">
+<head>
+<meta charset="utf-8">
+<title>weibo-test/angular.js</title>
+<link href="style/weibo.css" rel="stylesheet" type="text/css" />
+<script src="angular.js"></script>
+<script>
+var app=angular.module('app',[]);
+
+app.controller('weibo',function ($scope,$http){
+	$scope.data=[];
+	$scope.pageData=[];
+	var URL='weibo.php';
+	
+	//添加一条
+	$scope.send=function (){
+		$http.get(URL,{params:{
+			act:'add',
+			content:$scope.content
+		}}).success(function (data){
+			
+			$scope.data.unshift({
+				content:$scope.content,
+				time:data.time*1000,
+				id:data.id,
+				acc:0,
+				ref:0
+			});
+			
+			if($scope.data.length>6){
+				$scope.data.pop();
+			}
+			
+			$scope.getPageCount();
+		});
+	};
+	
+	//获取一页数据
+	getPageData(1);
+	function getPageData(n){
+		$scope.currentPage=n;
+		
+		$http.get(URL,{params:{
+			act:'get',
+			page:n
+		}}).success(function (data){
+			angular.forEach(data,function (item,index){
+				//[{id: ID, content: "内容", time: 时间戳, acc: 顶次数, ref: 踩次数}, {...}, ...]
+				$scope.data[index]=item;
+			});
+		});
+	}
+	$scope.getPageData=getPageData;
+	
+	//获取页数
+	getPageCount();
+	function getPageCount(){
+		$http.get(URL,{params:{
+			act:'get_page_count'
+		}}).success(function (data){
+			for(var i=0; i<data.count; i++){
+				$scope.pageData[i]=i+1;
+			}
+		});
+	}
+	
+	//顶
+	$scope.top=function (id,index){
+		$http.get(URL,{params:{
+			act:'acc',
+			id:id
+		}}).success(function (data){
+			$scope.data[index].acc++;
+		});
+	};
+});
+</script>
+</head>
+
+<body>
+<div class="znsArea" ng-controller="weibo">
+<!--留言-->
+     <div class="takeComment">
+        <textarea name="textarea" ng-model="content" class="takeTextField" id="tijiaoText"></textarea>
+        <div class="takeSbmComment">
+            <input type="button" class="inputs" ng-click="send()" value="" />
+            <span>(可按 Enter 回复)</span>
+        </div>
+    </div>
+<!--已留-->
+    <div class="commentOn">
+        <div class="noContent" ng-show="data.length==0">暂无留言</div>
+        <div class="messList">
+        	<div class="reply" ng-repeat="item in data">
+                <p class="replyContent">{{item.content}}</p>
+                <p class="operation">
+                    <span class="replyTime">{{item.time*1000|date:'yyyy-MM-dd hh:mm:ss'}}</span>
+                    <span class="handle">
+                    	<a href="javascript:;" ng-click="top(item.id,$index)" class="top">{{item.acc}}</a>
+                        <a href="javascript:;" class="down_icon">{{item.ref}}</a>
+                        <a href="javascript:;" class="cut">删除</a>
+                    </span>
+                </p>
+            </div>
+        </div>
+        <div class="page">
+        	<a ng-repeat="i in pageData" ng-class="{active:i==currentPage}" ng-click="getPageData(i)" href="javascript:;">{{i}}</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
